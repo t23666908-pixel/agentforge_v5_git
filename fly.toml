@@ -1,0 +1,29 @@
+# Fly.io Konfiguration – 1-Zeilen-Deploy:  flyctl launch --copy-config
+app = "agentforge"
+primary_region = "fra"           # oder Ihre Region
+
+[build]
+
+[env]
+  PORT = "8787"
+  PROVIDER = "openai"
+  RATE_LIMIT_AUTH = "10"
+  RATE_LIMIT_API = "120"
+  # JWT_SECRET wird via  flyctl secrets set JWT_SECRET=…  gesetzt.
+  # OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY als secrets:
+  #   flyctl secrets set OPENAI_API_KEY=sk-…
+
+[http_service]
+  internal_port = 8787
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[http_service.checks]]
+  interval = "30s"
+  timeout = "5s"
+  grace = "10s"
+  method = "GET"
+  path = "/health"

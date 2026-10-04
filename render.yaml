@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: agentforge
+    runtime: node
+    plan: free                # Render Free Plan (Spinning down) – oder "starter" für always-on
+    buildCommand: npm install --omit=dev
+    startCommand: node server.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Setze JWT_SECRET in Render Dashboard → "Environment" (sicher!)
+      - key: PORT
+        sync: false
+        value: "8787"
+      - key: JWT_SECRET
+        generateValue: true     # Render erzeugt einen sicheren Secret automatisch
+      - key: ALLOWED_ORIGIN
+        sync: false
+        value: "*"             # in Prod auf Frontend-Domain einschränken
+      - key: PROVIDER
+        sync: false
+        value: openai
+      # Provider-Keys hier als Secret Env-Variable setzen (nicht im YAML committen!)
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: RATE_LIMIT_AUTH
+        sync: false
+        value: "10"
+      - key: RATE_LIMIT_API
+        sync: false
+        value: "120"

@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentForge – AI Agenten Builder</title>
+<style>
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#2d3748;
+  --accent:#7c5cff; --accent2:#00d4ff; --text:#e6edf3; --muted:#8b949e;
+  --green:#3fb950; --red:#f85149; --orange:#f0883e; --yellow:#ffd76e; --radius:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden}
+header{display:flex;align-items:center;gap:12px;padding:12px 22px;border-bottom:1px solid var(--border);background:var(--panel)}
+header .logo{font-size:22px;font-weight:800;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+header .sub{color:var(--muted);font-size:13px}
+header .spacer{flex:1}
+.pill{display:flex;align-items:center;gap:7px;font-size:12px;padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--panel2)}
+.pill.click{cursor:pointer}.pill.click:hover{border-color:var(--accent)}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:var(--orange)}
+.pill.live .dot{background:var(--green);box-shadow:0 0 6px var(--green)}
+#costPill{color:var(--yellow);cursor:pointer}
+.user-pill{font-size:12px;padding:6px 14px;background:rgba(124,92,255,.12);color:#b8a5ff;border:1px solid rgba(124,92,255,.3)}
+.user-pill .email{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle}
+.btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:13px;transition:.15s}
+.btn:hover{border-color:var(--accent);color:#fff}
+.btn.primary{background:linear-gradient(90deg,var(--accent),#5a3ee0);border:none;color:#fff;font-weight:600}
+.btn.small{padding:5px 10px;font-size:12px}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.layout{display:grid;grid-template-columns:280px 1fr 380px;height:calc(100vh - 57px)}
+.sidebar{border-right:1px solid var(--border);background:var(--panel);overflow-y:auto;padding:16px}
+.sidebar h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:14px 0 8px}
+.agent-card{background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:10px;cursor:pointer;transition:.15s;position:relative}
+.agent-card:hover{border-color:var(--accent)}
+.agent-card.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.agent-card .head{display:flex;align-items:center;gap:10px}
+.agent-card .avatar{font-size:24px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:var(--bg);border-radius:10px}
+.agent-card .name{font-weight:600;font-size:14px}
+.agent-card .desc{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4}
+.agent-card .tags{margin-top:8px;display:flex;gap:5px;flex-wrap:wrap}
+.tag{font-size:10px;background:rgba(124,92,255,.15);color:#b8a5ff;padding:2px 8px;border-radius:20px;cursor:default}
+.tag.tool{background:rgba(0,212,255,.12);color:#7fe3ff}
+.tag.cost{background:rgba(255,215,110,.12);color:var(--yellow);cursor:pointer}
+.tag.del, .tag.share{background:rgba(248,81,73,.15);color:#ff9b94;cursor:pointer}
+.tag.share{background:rgba(0,212,255,.15);color:#7fe3ff}
+.tpl-grid .agent-card{border-style:dashed}
+.builder{overflow-y:auto;padding:24px 30px}
+.builder h2{font-size:20px;margin-bottom:4px}
+.builder .hint{color:var(--muted);font-size:13px;margin-bottom:22px}
+.section{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:18px}
+.section h4{font-size:13px;color:var(--accent2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+.field input[type=text],.field input[type=password],.field input[type=email],.field textarea,.field select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:13px;font-family:inherit;outline:none}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent)}
+.field textarea{resize:vertical;min-height:90px;line-height:1.5}
+.row{display:flex;gap:14px}.row .field{flex:1}
+.range-wrap{display:flex;align-items:center;gap:12px}
+input[type=range]{flex:1;accent-color:var(--accent)}
+.range-val{font-size:13px;color:var(--accent2);min-width:36px;text-align:right}
+.tools{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tool-chip{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;transition:.15s;user-select:none;position:relative}
+.tool-chip:hover{border-color:var(--accent2)}
+.tool-chip.on{border-color:var(--accent2);background:rgba(0,212,255,.08)}
+.tool-chip .ico{font-size:17px}
+.tool-chip .real{position:absolute;top:4px;right:6px;font-size:8px;color:var(--green)}
+.emoji-grid{display:flex;gap:8px;flex-wrap:wrap}
+.emoji-opt{font-size:22px;padding:6px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+.emoji-opt.sel{border-color:var(--accent);background:var(--bg)}
+.step-list .step{display:flex;gap:10px;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:13px}
+.step-list .step .num{background:var(--accent);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.step-list .step input{flex:1;background:transparent;border:none;color:var(--text);font-size:13px;outline:none}
+.step-list .step .del{color:var(--muted);cursor:pointer}.step-list .step .del:hover{color:var(--red)}
+.preview{border-left:1px solid var(--border);background:var(--panel);display:flex;flex-direction:column}
+.prev-tabs{display:flex;border-bottom:1px solid var(--border)}
+.prev-tab{flex:1;padding:12px;text-align:center;font-size:13px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent}
+.prev-tab.active{color:#fff;border-bottom-color:var(--accent)}
+.chat-area{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:88%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.msg.user{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px}
+.msg.agent{align-self:flex-start;background:var(--panel2);border:1px solid var(--border);border-bottom-left-radius:4px}
+.msg.error{border-color:var(--red);color:#ffb3ad}
+.msg .who{font-size:11px;color:var(--muted);margin-bottom:4px}
+.msg .meta{font-size:10px;color:var(--muted);margin-top:6px;border-top:1px solid var(--border);padding-top:4px}
+.msg.streaming::after{content:'▌';color:var(--accent2);animation:blink 1s infinite}
+.tool-run{align-self:flex-start;font-size:11px;color:var(--accent2);background:rgba(0,212,255,.07);border:1px dashed rgba(0,212,255,.35);padding:6px 12px;border-radius:8px}
+.tool-run .args{color:var(--muted)}
+@keyframes blink{0%,60%,100%{opacity:.2}30%{opacity:1}}
+.chat-input{display:flex;gap:8px;padding:14px;border-top:1px solid var(--border)}
+.chat-input input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:24px;font-size:13px;outline:none}
+.chat-input input:focus{border-color:var(--accent)}
+.code-view{flex:1;overflow:auto;padding:18px;font-size:12px;line-height:1.6;font-family:'Cascadia Code',Consolas,monospace;color:#a5d6ff;white-space:pre;display:none}
+.empty-note{margin:auto;color:var(--muted);font-size:13px;text-align:center;padding:20px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--green);color:#06130a;font-weight:600;padding:10px 22px;border-radius:24px;font-size:13px;opacity:0;transition:.3s;pointer-events:none;z-index:99;max-width:80vw}
+.toast.show{opacity:1}
+.toast.err{background:var(--red);color:#fff}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:50}
+.modal-overlay.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:26px;width:500px;max-width:92vw;max-height:88vh;overflow-y:auto}
+.modal h3{font-size:17px;margin-bottom:4px}
+.modal .hint{color:var(--muted);font-size:12px;margin-bottom:18px;line-height:1.5}
+.modal .hint a{color:var(--accent2)}
+.auth-tabs, .mode-toggle{display:flex;gap:8px;margin-bottom:18px}
+.auth-tabs .btn, .mode-toggle .btn{flex:1}
+.auth-tabs .btn.sel{border-color:var(--accent);color:#fff;background:rgba(124,92,255,.15)}
+.mode-toggle .btn.sel{border-color:var(--green);color:var(--green);background:rgba(63,185,80,.08)}
+.custom-model{display:none;margin-top:8px}
+.custom-model.show{display:block}
+.info-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--muted);line-height:1.6;margin-top:10px}
+.info-box code{color:var(--accent2)}
+.share-url{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-family:monospace;font-size:12px;margin:8px 0}
+.callout-warn{background:rgba(240,136,62,.10);border:1px solid rgba(240,136,62,.4);color:#ffc28a;padding:8px 12px;border-radius:8px;font-size:12px;margin-top:10px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">⚡ AgentForge</div>
+  <div class="sub">No-Code AI Agenten Builder</div>
+  <div class="spacer"></div>
+  <div class="pill" id="costPill" title="Gesamtkosten. Klick = zurücksetzen." onclick="resetCost()">💰 0,0000 $</div>
+  <div class="pill click" id="apiPill" onclick="openApiModal()"><span class="dot"></span><span id="apiPillText">Simulationsmodus</span></div>
+  <div id="userArea"></div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <button class="btn primary" style="width:100%" onclick="newAgent()">+ Neuer Agent</button>
+    <h3>Meine Agenten <span id="cloudHint" style="color:var(--accent);font-size:10px;text-transform:none;display:none">☁ Cloud</span></h3>
+    <div id="agentList"></div>
+    <h3>Vorlagen</h3>
+    <div class="tpl-grid" id="tplList"></div>
+  </aside>
+  <main class="builder">
+    <h2 id="builderTitle">Agent konfigurieren</h2>
+    <div class="hint">Definiere Identität, Verhalten, Werkzeuge und Ablauf deines Agenten – ganz ohne Code.</div>
+    <div class="section">
+      <h4>🪪 Identität</h4>
+      <div class="row">
+        <div class="field"><label>Name</label><input type="text" id="fName" placeholder="z. B. RechercheBot"></div>
+        <div class="field" style="max-width:200px"><label>Avatar</label><div class="emoji-grid" id="emojiGrid"></div></div>
+      </div>
+      <div class="field"><label>Kurzbeschreibung</label><input type="text" id="fDesc" placeholder="Was macht dieser Agent?"></div>
+    </div>
+    <div class="section">
+      <h4>🧠 Verhalten</h4>
+      <div class="field"><label>System-Prompt</label><textarea id="fPrompt" placeholder="Du bist ein hilfreicher Assistent, der …"></textarea></div>
+      <div class="row">
+        <div class="field"><label>Modell</label>
+          <select id="fModel">
+            <optgroup label="OpenAI"><option value="gpt-4o">GPT-4o</option><option value="gpt-4o-mini">GPT-4o mini</option><option value="gpt-4.1">GPT-4.1</option></optgroup>
+            <optgroup label="Anthropic"><option value="claude-sonnet-4-5">Claude Sonnet 4.5</option><option value="claude-opus-4-1">Claude Opus 4.1</option><option value="claude-haiku-4-5">Claude Haiku 4.5</option></optgroup>
+            <optgroup label="Google"><option value="gemini-2.5-pro">Gemini 2.5 Pro</option><option value="gemini-2.5-flash">Gemini 2.5 Flash</option></optgroup>
+            <optgroup label="OpenRouter / Groq"><option value="meta-llama/llama-4-maverick">Llama 4 Maverick</option><option value="custom">✏️ Eigene Modell-ID …</option></optgroup>
+          </select>
+          <div class="custom-model field" id="customModelWrap"><label>Eigene Modell-ID</label><input type="text" id="fCustomModel" placeholder="z. B. llama-3.3-70b-versatile"></div>
+        </div>
+        <div class="field"><label>Temperatur</label><div class="range-wrap"><input type="range" id="fTemp" min="0" max="100" value="70"><span class="range-val" id="tempVal">0.7</span></div></div>
+      </div>
+    </div>
+    <div class="section">
+      <h4>🛠 Werkzeuge <span style="color:var(--green);font-size:10px;text-transform:none">● echt ausgeführt</span></h4>
+      <div class="tools" id="toolGrid"></div>
+    </div>
+    <div class="section">
+      <h4>⚙️ Workflow-Schritte</h4>
+      <div class="step-list" id="stepList"></div>
+      <button class="btn small" onclick="addStep()">+ Schritt hinzufügen</button>
+    </div>
+  </main>
+  <section class="preview">
+    <div class="prev-tabs">
+      <div class="prev-tab active" id="tabChat" onclick="switchTab('chat')">💬 Test-Chat</div>
+      <div class="prev-tab" id="tabCode" onclick="switchTab('code')">📄 Config / Code</div>
+    </div>
+    <div class="chat-area" id="chatArea"><div class="empty-note">Konfiguriere links deinen Agenten<br>und teste ihn hier im Chat.</div></div>
+    <div class="code-view" id="codeView"></div>
+    <div class="chat-input">
+      <input type="text" id="chatInput" placeholder="Nachricht an den Agenten …" onkeydown="if(event.key==='Enter')sendMsg()">
+      <button class="btn primary" onclick="sendMsg()">Senden</button>
+    </div>
+  </section>
+</div>
+
+<!-- API MODAL -->
+<div class="modal-overlay" id="apiModal">
+  <div class="modal">
+    <h3>🔑 API-Verbindung</h3>
+    <div class="hint">Schlüssel werden <b>lokal im Browser gespeichert</b>. Über das <b>Backend</b> (oben anmelden) bleiben Provider-Keys serverseitig.</div>
+    <div class="mode-toggle">
+      <button class="btn" id="modeLive" onclick="setMode('live')">🟢 Live-API</button>
+      <button class="btn" id="modeSim" onclick="setMode('sim')">🟠 Simulation</button>
+    </div>
+    <div class="field"><label>Provider</label>
+      <select id="fProvider">
+        <option value="openai">OpenAI</option><option value="anthropic">Anthropic (Claude)</option>
+        <option value="gemini">Google (Gemini)</option><option value="openrouter">OpenRouter</option>
+        <option value="groq">Groq</option><option value="custom">OpenAI-kompatibel (eigener Proxy)</option>
+      </select></div>
+    <div class="field" id="baseUrlWrap" style="display:none"><label>Base-URL</label><input type="text" id="fBaseUrl" placeholder="http://localhost:8787/v1"></div>
+    <div class="field"><label>API-Key</label><input type="password" id="fApiKey" placeholder="sk-…"></div>
+    <div class="info-box">Rate-Limit: <b id="rateHint">120/min pro IP</b></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" onclick="testApi()">🧪 Testen</button>
+      <button class="btn primary" style="flex:1" onclick="saveApi()">Speichern</button>
+      <button class="btn" onclick="closeApiModal()">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal">
+    <div class="auth-tabs">
+      <button class="btn sel" id="authTabLogin" onclick="authSwitchTab('login')">🔓 Anmelden</button>
+      <button class="btn" id="authTabReg" onclick="authSwitchTab('register')">🆕 Registrieren</button>
+      <button class="btn" id="authTabReset" onclick="authSwitchTab('reset')">🔑 Passwort</button>
+    </div>
+    <h3 id="authTitle">Anmelden</h3>
+    <div class="hint" id="authSubtitle">Speichere deine Agenten in der Cloud.</div>
+    <div id="authFields">
+      <div class="field"><label>E-Mail</label><input type="email" id="authEmail" placeholder="name@firma.de" autocomplete="email"></div>
+      <div class="field"><label>Passwort (mind. 6 Zeichen)</label><input type="password" id="authPassword" autocomplete="current-password"></div>
+    </div>
+    <div id="authError" style="color:var(--red);font-size:12px;margin-bottom:10px;display:none"></div>
+    <div id="authOk" style="color:var(--green);font-size:12px;margin-bottom:10px;display:none"></div>
+    <div class="row">
+      <button class="btn" onclick="closeAuthModal()">Abbrechen</button>
+      <button class="btn primary" style="flex:1" id="authSubmitBtn" onclick="authSubmit()">Anmelden</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE MODAL -->
+<div class="modal-overlay" id="shareModal">
+  <div class="modal">
+    <h3>🔗 Share-Link</h3>
+    <div class="hint">Mit diesem Link sieht jeder die Agenten-Konfiguration als <b>Read-Only</b>-Vorschau – ohne Login.</div>
+    <input type="text" id="shareUrl" class="share-url" readonly>
+    <div class="info-box">⏱ Läuft in <b id="shareExpiry">7 Tagen</b> ab. ID: <code id="shareTokenPreview"></code></div>
+    <div class="callout-warn">⚠ Share-Links sind read-only: Andere können den Agent sehen, aber nicht speichern oder ausführen.</div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" onclick="copyShare()">📋 Kopieren</button>
+      <button class="btn primary" style="flex:1" onclick="closeShareModal()">Fertig</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const store={get:(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}},del:(k)=>{try{localStorage.removeItem(k)}catch{}}};
+const API_BASE=(location.hostname==='localhost'||location.protocol==='file:')?(location.protocol==='file:'?'http://localhost:8787':location.origin):location.origin;
+
+let auth=store.get('af_auth',{access:null,refresh:null,user:null});
+let apiCfg=store.get('af_api',{mode:'sim',provider:'openai',key:'',baseUrl:''});
+let usage=store.get('af_usage',{});
+let agents=[];let cur={name:'',avatar:'🤖',desc:'',prompt:'',model:'gpt-4o',temp:0.7,tools:[],steps:[]};
+let chatHist=[],selAgent=null,sending=false;
+
+const TOOLS=[{id:'web',ico:'🔍',name:'Websuche',real:true},{id:'code',ico:'💻',name:'Code-Ausführung',real:true},{id:'cal',ico:'📅',name:'Datum & Uhrzeit',real:true},{id:'db',ico:'🗄️',name:'Notizen (Mini-DB)',real:true},{id:'files',ico:'📁',name:'Datei-Analyse',real:false},{id:'mail',ico:'✉️',name:'E-Mail',real:false},{id:'image',ico:'🎨',name:'Bild-Generierung',real:false},{id:'api',ico:'🔌',name:'REST-API',real:false}];
+const EMOJIS=['🤖','🧠','🦾','🎯','🚀','📊','💬','🕵️','✍️','🛠️','🌐','⚡'];
+const TEMPLATES=[
+  {name:'Recherche-Assistent',avatar:'🕵️',desc:'Recherchiert Themen im Web.',model:'gpt-4o',temp:0.4,tools:['web','cal'],prompt:'Du bist ein präziser Recherche-Assistent. Antworte auf Deutsch.',steps:['Anfrage analysieren','Websuche durchführen','Antwort erstellen']},
+  {name:'Kundensupport-Bot',avatar:'💬',desc:'Beantwortet Kundenfragen freundlich.',model:'gpt-4o-mini',temp:0.6,tools:['db','cal'],prompt:'Du bist ein freundlicher Kundensupport-Agent. Antworte höflich und kurz auf Deutsch.',steps:['Anliegen klassifizieren','Antwort geben']},
+  {name:'Content-Writer',avatar:'✍️',desc:'Erstellt Texte und Content.',model:'claude-sonnet-4-5',temp:0.9,tools:['web'],prompt:'Du bist ein kreativer deutscher Content-Writer.',steps:['Briefing','Text']},
+  {name:'Code-Assistent',avatar:'💻',desc:'Schreibt und testet Code.',model:'claude-opus-4-1',temp:0.2,tools:['code'],prompt:'Du bist ein präziser Code-Assistent. Antworte auf Deutsch.',steps:['Code schreiben','Testen']}
+];
+
+const PRICES=[['gpt-4o-mini',0.15,0.6],['gpt-4o',2.5,10],['gpt-4.1',2,8],['claude-haiku',1,5],['claude-sonnet',3,15],['claude-opus',15,75],['gemini-2.5-flash',0.3,2.5],['gemini-2.5-pro',1.25,10],['llama',0.2,0.6]];
+function priceFor(m){const s=(m||'').toLowerCase();for(const[k,i,o]of PRICES)if(s.includes(k))return[i,o];return[1,3];}
+function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+
+/* ================= AUTH-API ================= */
+async function api(path,opts={},_retried=false){
+  const h={'Content-Type':'application/json'};if(auth.access)h.Authorization='Bearer '+auth.access;
+  const res=await fetch(API_BASE+path,{...opts,headers:h});
+  if(res.status===401&&auth.refresh&&!_retried){
+    const r=await tryRefresh();
+    if(r.ok)return api(path,opts,true);
+    auth={access:null,refresh:null,user:null};store.set('af_auth',auth);renderUserArea();
+    openAuthModal();throw new Error('Sitzung abgelaufen – bitte neu anmelden.');
+  }
+  const j=await res.json().catch(()=>({}));
+  if(!res.ok)throw new Error(j.error||('HTTP '+res.status));
+  return j;
+}
+async function tryRefresh(){
+  try{
+    const res=await fetch(API_BASE+'/api/auth/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh:auth.refresh})});
+    const j=await res.json();if(!res.ok||!j.access)return{ok:false};
+    auth.access=j.access;if(j.user)auth.user=j.user;store.set('af_auth',auth);return{ok:true,access:j.access};
+  }catch{return{ok:false};}
+}
+async function backendLogout(){
+  try{await fetch(API_BASE+'/api/auth/logout',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(auth.access||'')},body:JSON.stringify({refresh:auth.refresh})});}catch{}
+  auth={access:null,refresh:null,user:null};store.set('af_auth',auth);
+}
+
+function renderUserArea(){
+  const a=document.getElementById('userArea');
+  document.getElementById('cloudHint').style.display=auth.user?'inline':'none';
+  if(auth.user){
+    a.innerHTML=`<span class="user-pill">👤 <span class="email">${escapeHtml(auth.user.email)}</span></span><button class="btn" onclick="logout()" title="Logout">Logout</button>`;
+  }else a.innerHTML=`<button class="btn primary" onclick="openAuthModal()">🔓 Anmelden / Registrieren</button>`;
+}
+
+/* AUTH MODAL */
+function openAuthModal(){document.getElementById('authModal').classList.add('show');authSwitchTab('login');}
+function closeAuthModal(){document.getElementById('authModal').classList.remove('show');hideAuthMsg();}
+function hideAuthMsg(){document.getElementById('authError').style.display='none';document.getElementById('authOk').style.display='none';}
+function showAuthErr(m){const e=document.getElementById('authError');e.textContent=m;e.style.display='block';document.getElementById('authOk').style.display='none';}
+function showAuthOk(m){const e=document.getElementById('authOk');e.textContent=m;e.style.display='block';document.getElementById('authError').style.display='none';}
+function authSwitchTab(t){
+  authSwitchTabClass(t);
+  const fields=document.getElementById('authFields');
+  const sb=document.getElementById('authSubmitBtn');
+  hideAuthMsg();
+  if(t==='login'){document.getElementById('authTitle').textContent='Anmelden';document.getElementById('authSubtitle').textContent='Speichere Agenten in der Cloud.';sb.textContent='Anmelden';sb.dataset.mode='login';fields.style.display='block';}
+  else if(t==='register'){document.getElementById('authTitle').textContent='Konto erstellen';document.getElementById('authSubtitle').textContent='Kostenlos · Passwort mit bcrypt gehasht.';sb.textContent='Registrieren & Anmelden';sb.dataset.mode='register';fields.style.display='block';}
+  else {document.getElementById('authTitle').textContent='Passwort zurücksetzen';document.getElementById('authSubtitle').textContent='Wir schicken dir einen Reset-Link (oder zeigen den Code im Preview-Modus).';sb.textContent='Reset-Link anfordern';sb.dataset.mode='reset';fields.style.display='none';}
+}
+function authSwitchTabClass(t){['Login','Reg','Reset'].forEach(n=>{const b=document.getElementById('authTab'+n);b.classList.toggle('sel',n.toLowerCase()===t);});}
+async function authSubmit(){
+  const mode=document.getElementById('authSubmitBtn').dataset.mode||'login';
+  hideAuthMsg();
+  if(mode==='reset'){
+    const email=document.getElementById('authEmail').value.trim();
+    if(!email){showAuthErr('Bitte E-Mail eingeben.');return;}
+    try{
+      const r=await fetch(API_BASE+'/api/auth/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+      const j=await r.json();
+      if(r.status===429){showAuthErr('Zu viele Anfragen – bitte 1 min warten.');return;}
+      if(!r.ok){showAuthErr(j.error||'Fehler');return;}
+      let msg='Falls die E-Mail existiert, wurde ein Reset-Link versendet.';
+      if(j.sent==='preview'&&j.reset_token){msg+=' PREVIEW-MODUS – kein SMTP gesetzt. Token/Link: '+j.reset_token;}
+      showAuthOk(msg);
+      toast('📧 Reset angefordert');
+    }catch(e){showAuthErr('Backend nicht erreichbar: '+e.message);}
+    return;
+  }
+  const email=document.getElementById('authEmail').value.trim();
+  const pw=document.getElementById('authPassword').value;
+  if(!email||!pw){showAuthErr('Bitte E-Mail und Passwort eingeben.');return;}
+  try{
+    const res=await fetch(API_BASE+'/api/auth/'+(mode==='login'?'login':'register'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
+    const j=await res.json();if(!res.ok){if(res.status===429)showAuthErr('Zu viele Anfragen – bitte 1 min warten.');else showAuthErr(j.error||'Fehler');return;}
+    auth={access:j.access,refresh:j.refresh,user:j.user};store.set('af_auth',auth);
+    closeAuthModal();renderUserArea();renderAgentList();
+    toast('✅ '+(mode==='login'?'Angemeldet':'Konto erstellt'));
+    if(mode==='register')await loadCloudAgents();
+  }catch(e){showAuthErr('Backend nicht erreichbar: '+e.message);}
+}
+async function logout(){if(!confirm('Wirklich abmelden?'))return;await backendLogout();renderUserArea();renderAgentList();toast('🔓 Abgemeldet');}
+
+async function loadCloudAgents(){if(!auth.access)return [];try{const r=await api('/api/agents');agents=r;renderAgentList();toast('☁ '+agents.length+' Agenten geladen');return r;}catch(e){toast('⚠ '+e.message,true);return [];}}
+async function saveCloudAgent(cfg){if(!auth.access)return null;
+  if(cfg._id){await api('/api/agents/'+cfg._id,{method:'PUT',body:JSON.stringify(cfg)});return cfg._id;}
+  const r=await api('/api/agents',{method:'POST',body:JSON.stringify(cfg)});cfg._id=r.id;return r.id;}
+async function deleteCloudAgent(id){if(!auth.access||!id)return;try{await api('/api/agents/'+id,{method:'DELETE'});}catch(e){toast('⚠ '+e.message,true);}}
+
+/* ================= API-CONFIG ================= */
+function setMode(m){apiCfg.mode=m;document.getElementById('modeLive').classList.toggle('sel',m==='live');document.getElementById('modeSim').classList.toggle('sel',m==='sim');}
+function openApiModal(){
+  document.getElementById('fProvider').value=apiCfg.provider||'openai';
+  document.getElementById('fApiKey').value=apiCfg.key||'';
+  document.getElementById('fBaseUrl').value=apiCfg.baseUrl||(API_BASE+'/v1');
+  toggleBaseUrl();setMode(apiCfg.mode||'sim');document.getElementById('apiModal').classList.add('show');}
+function closeApiModal(){document.getElementById('apiModal').classList.remove('show');}
+function toggleBaseUrl(){document.getElementById('baseUrlWrap').style.display=document.getElementById('fProvider').value==='custom'?'block':'none';}
+document.getElementById('fProvider').onchange=()=>{toggleBaseUrl();};
+function saveApi(){
+  apiCfg.provider=document.getElementById('fProvider').value;
+  apiCfg.key=document.getElementById('fApiKey').value.trim();
+  apiCfg.baseUrl=document.getElementById('fBaseUrl').value.trim();
+  store.set('af_api',apiCfg);updateApiPill();closeApiModal();
+  toast(apiCfg.mode==='live'?'🟢 Live-API aktualisiert':'🟠 Simulationsmodus aktiv');}
+function updateApiPill(){
+  const pill=document.getElementById('apiPill'),txt=document.getElementById('apiPillText');
+  const live=apiCfg.mode==='live'&&(apiCfg.key||apiCfg.baseUrl.includes('/v1'));
+  pill.classList.toggle('live',!!live);
+  txt.textContent=live?`Live: ${apiCfg.provider}`:'Simulationsmodus';}
+function defaultModelFor(p){return{openai:'gpt-4o-mini',anthropic:'claude-haiku-4-5',gemini:'gemini-2.5-flash',openrouter:'meta-llama/llama-4-maverick',groq:'llama-3.3-70b-versatile',custom:''}[p]||'gpt-4o-mini';}
+async function testApi(){
+  apiCfg.provider=document.getElementById('fProvider').value;
+  apiCfg.key=document.getElementById('fApiKey').value.trim();
+  apiCfg.baseUrl=document.getElementById('fBaseUrl').value.trim();
+  if(!apiCfg.key){toast('⚠ Bitte API-Key eingeben',true);return;}
+  toast('🧪 Teste Verbindung …');
+  try{
+    const r=await callLLM([{role:'user',content:'Antworte nur OK'}],{model:defaultModelFor(apiCfg.provider),temp:0,maxTokens:16});
+    toast(r.text?'✅ Verbindung erfolgreich':'⚠ Leere Antwort');}
+  catch(e){toast('❌ '+e.message,true);}
+  if(apiCfg.mode==='live'){toast('Hinweis: Provider-Limits werden serverseitig (RATE_LIMIT_API/min) gezählt',false);}
+}
+
+/* ================= TOOLS ================= */
+const TOOL_DEFS={
+  web:{name:'websuche',description:'Live-Websuche.',params:{type:'object',properties:{query:{type:'string'}},required:['query']},run:async a=>{const r=await fetch('https://api.duckduckgo.com/?q='+encodeURIComponent(a.query)+'&format=json&no_html=1&kl=de-de');const j=await r.json();return((j.AbstractText||'')+'\n'+(j.RelatedTopics||[]).slice(0,5).map(t=>t.Text).filter(Boolean).join('\n')).trim()||'Keine Ergebnisse. Antworte aus deinem Wissen und weise darauf hin.';}},
+  code:{name:'code_ausfuehren',description:'JS im Browser ausführen.',params:{type:'object',properties:{code:{type:'string'}},required:['code']},run:async a=>{const logs=[];const oL=console.log;console.log=(...x)=>logs.push(x.map(String).join(' '));try{const fn=new Function(a.code);const ret=fn();return(logs.join('\n')+(logs.length&&ret!==undefined?'\n':'')+(ret!==undefined?'→ '+JSON.stringify(ret):''))||'(keine Ausgabe)';}finally{console.log=oL;}}},
+  cal:{name:'aktuelle_zeit',description:'Aktuelles Datum/Zeit.',params:{type:'object',properties:{},required:[]},run:async()=>new Date().toLocaleString('de-DE',{dateStyle:'full',timeStyle:'long'})},
+  db:{name:'notiz',description:'Notizen speichern/lesen/löschen.',params:{type:'object',properties:{aktion:{type:'string',enum:['speichern','lesen','liste','loeschen']},schluessel:{type:'string'},inhalt:{type:'string'}},required:['aktion','schluessel']},run:async a=>{const db=store.get('af_notes',{});if(a.aktion==='speichern'){db[a.schluessel]=a.inhalt||'';store.set('af_notes',db);return 'Gespeichert: '+a.schluessel;}if(a.aktion==='lesen')return db[a.schluessel]??('Keine Notiz unter „'+a.schluessel+'".');if(a.aktion==='loeschen'){delete db[a.schluessel];store.set('af_notes',db);return 'Gelöscht.';}return 'Notizen: '+(Object.keys(db).join(', ')||'(leer)');}}
+};
+async function runTool(name,args){const d=Object.values(TOOL_DEFS).find(x=>x.name===name);if(!d)return'Unbekanntes Tool.';try{return await d.run(args||{});}catch(e){return'Tool-Fehler: '+e.message;}}
+function oaiTools(ids){return ids.map(id=>({type:'function',function:{name:TOOL_DEFS[id].name,description:TOOL_DEFS[id].description,parameters:TOOL_DEFS[id].params}}));}
+function anthTools(ids){return ids.map(id=>({name:TOOL_DEFS[id].name,description:TOOL_DEFS[id].description,input_schema:TOOL_DEFS[id].params}));}
+function gemTools(ids){return[{function_declarations:ids.map(id=>({name:TOOL_DEFS[id].name,description:TOOL_DEFS[id].description,parameters:TOOL_DEFS[id].params}))}];}
+
+/* ================= LLM ================= */
+async function callLLM(msgs,opts){const p=apiCfg.provider;const toolIds=(opts.tools||[]).filter(id=>TOOL_DEFS[id]);if(p==='gemini')return callGemini(msgs,opts,toolIds);if(p==='anthropic')return callAnthropic(msgs,opts,toolIds);return callOpenAICompat(msgs,opts,toolIds);}
+function oaiBase(){return{openai:'https://api.openai.com/v1',openrouter:'https://openrouter.ai/api/v1',groq:'https://api.groq.com/openai/v1',custom:apiCfg.baseUrl}[apiCfg.provider];}
+async function callOpenAICompat(messages,opts,toolIds){
+  const base=oaiBase();if(!base)throw new Error('Base-URL fehlt.');
+  let msgs=[...messages],rounds=0,u={in:0,out:0},toolRuns=[];
+  while(rounds++<4){
+    const body={model:opts.model,messages:msgs,temperature:opts.temp,max_tokens:opts.maxTokens||2048};
+    if(toolIds.length){body.tools=oaiTools(toolIds);body.tool_choice='auto';}
+    const res=await fetch(base+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiCfg.key},body:JSON.stringify(body)});
+    const j=await res.json();if(!res.ok)throw new Error(j.error?.message||'API '+res.status);
+    if(j.usage){u.in+=j.usage.prompt_tokens||0;u.out+=j.usage.completion_tokens||0;}
+    const m=j.choices?.[0]?.message||{};
+    if(m.tool_calls?.length){msgs.push({role:'assistant',content:m.content||'',tool_calls:m.tool_calls});
+      for(const tc of m.tool_calls){const a=JSON.parse(tc.function.arguments||'{}');toolRuns.push({name:tc.function.name,args:a});
+        msgs.push({role:'tool',tool_call_id:tc.id,content:String(await runTool(tc.function.name,a)).slice(0,4000)});}continue;}
+    return{text:m.content||'',usage:u,toolRuns};}
+  return{text:'(Max Tool-Runden)',usage:u,toolRuns};
+}
+async function streamOpenAI(messages,opts,onDelta){
+  const base=oaiBase();if(!base)throw new Error('Base-URL fehlt');
+  const res=await fetch(base+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiCfg.key},
+    body:JSON.stringify({model:opts.model,messages,temperature:opts.temp,max_tokens:opts.maxTokens||2048,stream:true,stream_options:{include_usage:true}})});
+  if(!res.ok){const j=await res.json().catch(()=>({}));throw new Error(j.error?.message||'API '+res.status);}
+  const rd=res.body.getReader(),dc=new TextDecoder();let buf='',full='',u={in:0,out:0};
+  while(true){const{done,value}=await rd.read();if(done)break;buf+=dc.decode(value,{stream:true});
+    const lines=buf.split('\n');buf=lines.pop();
+    for(const l of lines){const x=l.trim();if(!x.startsWith('data:'))continue;const d=x.slice(5).trim();if(d==='[DONE]')continue;
+      try{const j=JSON.parse(d);const del=j.choices?.[0]?.delta?.content;if(del){full+=del;onDelta(full);}if(j.usage){u.in=j.usage.prompt_tokens||u.in;u.out=j.usage.completion_tokens||u.out;}}catch{}}}
+  return{text:full,usage:u,toolRuns:[]};
+}
+async function callAnthropic(msgs,opts,toolIds){
+  const sys=msgs.filter(m=>m.role==='system').map(m=>m.content).join('\n');
+  let M=msgs.filter(m=>m.role!=='system').map(m=>({role:m.role,content:m.content})),r=0,u={in:0,out:0},toolRuns=[];
+  while(r++<4){
+    const b={model:opts.model,messages:M,temperature:opts.temp,max_tokens:opts.maxTokens||2048};
+    if(sys)b.system=sys;if(toolIds.length)b.tools=anthTools(toolIds);
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiCfg.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(b)});
+    const j=await res.json();if(!res.ok)throw new Error(j.error?.message||'Anthropic-Fehler');
+    if(j.usage){u.in+=j.usage.input_tokens||0;u.out+=j.usage.output_tokens||0;}
+    const tu=(j.content||[]).filter(x=>x.type==='tool_use');
+    const text=(j.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('');
+    if(tu.length){M.push({role:'assistant',content:j.content});
+      const R=[];for(const t of tu){const r=await runTool(t.name,t.input||{});toolRuns.push({name:t.name,args:t.input});R.push({type:'tool_result',tool_use_id:t.id,content:String(r).slice(0,4000)});}
+      M.push({role:'user',content:R});continue;}
+    return{text,usage:u,toolRuns};}
+  return{text:'(Max)',usage:u,toolRuns};
+}
+async function callGemini(msgs,opts,toolIds){
+  const sys=msgs.filter(m=>m.role==='system').map(m=>m.content).join('\n');
+  let contents=msgs.filter(m=>m.role!=='system').map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:m.content}]})),r=0,u={in:0,out:0},toolRuns=[];
+  while(r++<4){
+    const body={contents,generationConfig:{temperature:opts.temp,maxOutputTokens:opts.maxTokens||2048}};
+    if(sys)body.systemInstruction={parts:[{text:sys}]};if(toolIds.length)body.tools=gemTools(toolIds);
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${opts.model}:generateContent?key=${apiCfg.key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const j=await res.json();if(!res.ok)throw new Error(j.error?.message||'Gemini-Fehler');
+    if(j.usageMetadata){u.in+=j.usageMetadata.promptTokenCount||0;u.out+=j.usageMetadata.candidatesTokenCount||0;}
+    const parts=j.candidates?.[0]?.content?.parts||[];
+    const fc=parts.filter(p=>p.functionCall);
+    const text=parts.filter(p=>p.text).map(p=>p.text).join('');
+    if(fc.length){contents.push({role:'model',parts});const resp=[];
+      for(const f of fc){const result=await runTool(f.functionCall.name,f.functionCall.args||{});toolRuns.push({name:f.functionCall.name,args:f.functionCall.args});resp.push({functionResponse:{name:f.functionCall.name,response:{result:String(result).slice(0,4000)}}});}
+      contents.push({role:'user',parts:resp});continue;}
+    return{text,usage:u,toolRuns};}
+  return{text:'(Max)',usage:u,toolRuns};
+}
+
+/* ================= COST ================= */
+function trackCost(name,model,u){if(!u||(!u.in&&!u.out))return 0;const[pi,po]=priceFor(model);const c=(u.in/1e6)*pi+(u.out/1e6)*po;const k=name||'(unbenannt)';usage[k]=usage[k]||{in:0,out:0,cost:0};usage[k].in+=u.in;usage[k].out+=u.out;usage[k].cost+=c;store.set('af_usage',usage);renderCostPill();renderAgentList();return c;}
+function totalCost(){return Object.values(usage).reduce((s,x)=>s+x.cost,0);}
+function renderCostPill(){document.getElementById('costPill').textContent='💰 '+totalCost().toFixed(4)+' $';}
+function resetCost(){usage={};store.set('af_usage',usage);renderCostPill();renderAgentList();toast('💰 Kosten zurückgesetzt');}
+function fmtCost(c){return c<0.0001?'~0 $':c.toFixed(4)+' $';}
+
+/* ================= BUILDER UI ================= */
+const eg=document.getElementById('emojiGrid');
+EMOJIS.forEach(e=>{const s=document.createElement('span');s.className='emoji-opt';s.textContent=e;s.onclick=()=>{cur.avatar=e;document.querySelectorAll('.emoji-opt').forEach(x=>x.classList.remove('sel'));s.classList.add('sel');};eg.appendChild(s);});
+const tg=document.getElementById('toolGrid');
+TOOLS.forEach(t=>{const d=document.createElement('div');d.className='tool-chip';d.dataset.id=t.id;
+  d.innerHTML=`<span class="ico">${t.ico}</span>${t.name}${t.real?'<span class="real">●</span>':''}`;
+  d.onclick=()=>{const i=cur.tools.indexOf(t.id);i>=0?cur.tools.splice(i,1):cur.tools.push(t.id);d.classList.toggle('on');};
+  tg.appendChild(d);});
+const fModel=document.getElementById('fModel');
+function toggleCustomModel(){document.getElementById('customModelWrap').classList.toggle('show',fModel.value==='custom');}
+fModel.onchange=()=>{toggleCustomModel();syncFromForm();};
+document.getElementById('fCustomModel').oninput=syncFromForm;
+document.getElementById('fTemp').oninput=e=>{cur.temp=e.target.value/100;document.getElementById('tempVal').textContent=cur.temp.toFixed(1);};
+['fName','fDesc','fPrompt'].forEach(id=>document.getElementById(id).oninput=syncFromForm);
+function getModelValue(){return fModel.value==='custom'?(document.getElementById('fCustomModel').value.trim()||'custom'):fModel.value;}
+function syncFromForm(){cur.name=fName.value;cur.desc=fDesc.value;cur.prompt=fPrompt.value;cur.model=getModelValue();}
+function setModelSelect(m){const known=[...fModel.options].some(o=>o.value===m);fModel.value=known?m:'custom';if(!known)document.getElementById('fCustomModel').value=m;toggleCustomModel();}
+function renderSteps(){const sl=document.getElementById('stepList');sl.innerHTML='';
+  cur.steps.forEach((s,i)=>{const d=document.createElement('div');d.className='step';
+    d.innerHTML=`<span class="num">${i+1}</span><input value="${s.replace(/"/g,'&quot;')}"><span class="del">✕</span>`;
+    d.querySelector('input').oninput=e=>cur.steps[i]=e.target.value;
+    d.querySelector('.del').onclick=()=>{cur.steps.splice(i,1);renderSteps();};
+    sl.appendChild(d);});}
+function addStep(){cur.steps.push('Neuer Schritt');renderSteps();}
+function loadIntoForm(a){cur=JSON.parse(JSON.stringify(a));
+  fName.value=cur.name||'';fDesc.value=cur.desc||'';fPrompt.value=cur.prompt||'';setModelSelect(cur.model);
+  fTemp.value=(cur.temp||0.7)*100;tempVal.textContent=(cur.temp||0.7).toFixed(1);
+  document.querySelectorAll('.emoji-opt').forEach(x=>x.classList.toggle('sel',x.textContent===cur.avatar));
+  document.querySelectorAll('.tool-chip').forEach(c=>c.classList.toggle('on',cur.tools.includes(c.dataset.id)));
+  renderSteps();
+  document.getElementById('builderTitle').textContent=cur.name?`„${cur.name}" konfigurieren`:'Agent konfigurieren';
+  chatHist=[];renderChat();}
+function renderAgentList(){const el=document.getElementById('agentList');
+  el.innerHTML=!agents.length?'<div style="color:var(--muted);font-size:12px;padding:6px">'+(auth.user?'Noch keine Agenten gespeichert.':'Melde dich an, um Agenten in der Cloud zu speichern.')+'</div>':'';
+  agents.forEach(a=>{const c=document.createElement('div');c.className='agent-card'+(a===selAgent?' active':'');
+    const u=usage[a.name];
+    c.innerHTML=`<div class="head"><div class="avatar">${a.avatar}</div><div class="name">${escapeHtml(a.name||'Unbenannt')}</div></div>
+      <div class="desc">${escapeHtml(a.desc||'')}</div>
+      <div class="tags"><span class="tag">${a.model}</span>${a.tools.map(t=>'<span class="tag tool">'+t+'</span>').join('')}${u&&u.cost?'<span class="tag cost" title="Kosten zurücksetzen" onclick="event.stopPropagation();resetCost()">💰 '+fmtCost(u.cost)+'</span>':''}${(auth.user&&a._id)?'<span class="tag share" title="Share-Link erzeugen" data-action="share">🔗</span><span class="tag del" title="Löschen" data-action="del">🗑</span>':''}</div>`;
+    c.onclick=e=>{
+      const act=e.target.dataset?.action;
+      if(act==='share'){e.stopPropagation();createShareLink(a);return;}
+      if(act==='del'){e.stopPropagation();deleteAgent(a);return;}
+      selAgent=a;loadIntoForm(a);};
+    el.appendChild(c);});}
+const tl=document.getElementById('tplList');
+TEMPLATES.forEach(t=>{const c=document.createElement('div');c.className='agent-card';
+  c.innerHTML=`<div class="head"><div class="avatar">${t.avatar}</div><div class="name">${t.name}</div></div><div class="desc">${escapeHtml(t.desc)}</div>`;
+  c.onclick=()=>{selAgent=null;loadIntoForm(t);toast('Vorlage geladen – anpassen & speichern');};tl.appendChild(c);});
+function newAgent(){selAgent=null;loadIntoForm({name:'',avatar:'🤖',desc:'',prompt:'',model:'gpt-4o',temp:0.7,tools:[],steps:[]});}
+async function saveAgent(){
+  syncFromForm();if(!cur.name){toast('⚠ Bitte einen Namen vergeben',true);return;}
+  if(auth.access){
+    try{let saved=cur;if(selAgent&&selAgent._id)saved._id=selAgent._id;await saveCloudAgent(saved);
+      const idx=agents.indexOf(selAgent);if(idx>=0)agents[idx]=saved;else agents.push(saved);selAgent=saved;
+      toast('☁ Agent gespeichert');
+    }catch(e){toast('❌ '+e.message,true);return;}
+  }else{
+    const idx=agents.indexOf(selAgent);if(idx>=0)agents[idx]=cur;else agents.push(cur);selAgent=cur;
+    store.set('af_agents',agents);toast('💾 Lokal gespeichert (ohne Login)');
+  }
+  renderAgentList();
+}
+async function deleteAgent(a){if(!confirm('Agent »'+a.name+'« wirklich löschen?'))return;
+  if(auth.access&&a._id){await deleteCloudAgent(a._id);agents=agents.filter(x=>x!==a);renderAgentList();if(selAgent===a)newAgent();toast('🗑 Gelöscht');}
+  else{agents=agents.filter(x=>x!==a);renderAgentList();if(selAgent===a)newAgent();toast('🗑 Gelöscht (lokal)');}
+}
+
+/* ================= SHARE ================= */
+async function createShareLink(a){
+  if(!a._id){toast('⚠ Bitte erst speichern (für Cloud-Speicherung erforderlich)',true);return;}
+  try{
+    const r=await api('/api/agents/'+a._id+'/share',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
+    document.getElementById('shareUrl').value=r.url;
+    document.getElementById('shareTokenPreview').textContent=r.token.slice(0,12)+'…';
+    const days=Math.round((r.expires_at-Math.floor(Date.now()/1000))/86400);
+    document.getElementById('shareExpiry').textContent=days+' Tag(en)';
+    document.getElementById('shareModal').classList.add('show');
+  }catch(e){toast('❌ '+e.message,true);}
+}
+function closeShareModal(){document.getElementById('shareModal').classList.remove('show');}
+async function copyShare(){const v=document.getElementById('shareUrl').value;
+  try{await navigator.clipboard.writeText(v);toast('📋 Share-Link kopiert');}
+  catch{document.getElementById('shareUrl').select();document.execCommand('copy');toast('📋 Kopiert');}}
+
+/* ================= EXPORT / IMPORT ================= */
+function exportJSON(){syncFromForm();
+  const blob=new Blob([JSON.stringify(cur,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=(cur.name||'agent').replace(/\s+/g,'_')+'.json';a.click();toast('⬇ JSON exportiert');}
+function importJSON(){const inp=document.createElement('input');inp.type='file';inp.accept='.json';
+  inp.onchange=()=>{const r=new FileReader();r.onload=e=>{try{loadIntoForm(JSON.parse(e.target.result));toast('⬆ Agent importiert');}catch{toast('⚠ Ungültige Datei',true);}};r.readAsText(inp.files[0]);};inp.click();}
+
+/* ================= TABS ================= */
+function switchTab(t){document.getElementById('tabChat').classList.toggle('active',t==='chat');
+  document.getElementById('tabCode').classList.toggle('active',t==='code');
+  document.getElementById('chatArea').style.display=t==='chat'?'flex':'none';
+  document.getElementById('codeView').style.display=t==='code'?'block':'none';
+  document.querySelector('.chat-input').style.display=t==='chat'?'flex':'none';
+  if(t==='code')renderCode();}
+function renderCode(){syncFromForm();
+  const toolDefs=cur.tools.filter(t=>TOOL_DEFS[t]).map(t=>TOOL_DEFS[t]);
+  const cfg={agent:{name:cur.name,avatar:cur.avatar,description:cur.desc,model:cur.model,temperature:cur.temp,system_prompt:cur.prompt,tools:cur.tools,workflow:cur.steps}};
+  document.getElementById('codeView').textContent='// Agent-Konfiguration\n\n'+JSON.stringify(cfg,null,2)+'\n\n// API-Call (Python)\nimport openai\nclient = openai.OpenAI(api_key="DEIN_KEY")\nresp = client.chat.completions.create(model="'+cur.model+'", temperature='+cur.temp+', messages=...)';}
+
+/* ================= CHAT ================= */
+function renderChat(){const ca=document.getElementById('chatArea');ca.innerHTML='';
+  if(!chatHist.length){ca.innerHTML='<div class="empty-note">Konfiguriere links deinen Agenten<br>und teste ihn hier im Chat.</div>';return;}
+  chatHist.forEach(m=>{if(m.tool){const t=document.createElement('div');t.className='tool-run';
+    t.innerHTML='⚙ '+escapeHtml(m.tool)+' <span class="args">'+escapeHtml(m.args||'')+'</span>';ca.appendChild(t);return;}
+    const d=document.createElement('div');d.className='msg '+m.role+(m.error?' error':'')+(m.streaming?' streaming':'');
+    d.innerHTML=(m.role==='agent'?`<div class="who">${cur.avatar} ${escapeHtml(cur.name||'Agent')} · ${cur.model}</div>`:'')+escapeHtml(m.text)
+      +(m.meta?`<div class="meta">${m.meta}</div>`:'');ca.appendChild(d);});ca.scrollTop=ca.scrollHeight;}
+function showTyping(){const ca=document.getElementById('chatArea');
+  const t=document.createElement('div');t.className='typing';t.id='typing';t.innerHTML='denkt <span>●</span><span>●</span><span>●</span>';ca.appendChild(t);ca.scrollTop=ca.scrollHeight;}
+function hideTyping(){document.getElementById('typing')?.remove();}
+function buildSystemPrompt(){let sp=cur.prompt||'Du bist ein hilfreicher Assistent. Antworte auf Deutsch.';
+  const st=cur.tools.filter(t=>!TOOL_DEFS[t]).map(t=>TOOLS.find(x=>x.id===t)?.name).filter(Boolean);
+  if(st.length)sp+='\n\nKonzeptionell verfügbar (nicht ausführbar): '+st.join(', ')+'.';
+  if(cur.steps.length)sp+='\n\nWorkflow:\n'+cur.steps.map((s,i)=>(i+1)+'. '+s).join('\n');
+  return sp;}
+
+async function sendMsg(){
+  if(sending)return;
+  const inp=document.getElementById('chatInput');const txt=inp.value.trim();if(!txt)return;
+  inp.value='';syncFromForm();
+  chatHist.push({role:'user',text:txt});renderChat();showTyping();
+  const live=apiCfg.mode==='live'&&apiCfg.key;
+  if(!live){setTimeout(()=>{hideTyping();chatHist.push({role:'agent',text:simulateReply(txt)});renderChat();},700);return;}
+  sending=true;
+  const messages=[{role:'system',content:buildSystemPrompt()},
+    ...chatHist.filter(m=>!m.error&&!m.tool).map(m=>({role:m.role,content:m.text}))];
+  const exec=cur.tools.filter(t=>TOOL_DEFS[t]);
+  const canStream=['openai','openrouter','groq','custom'].includes(apiCfg.provider);
+  try{
+    let result;
+    if(exec.length===0&&canStream){
+      const m={role:'agent',text:'',streaming:true};chatHist.push(m);hideTyping();renderChat();
+      result=await streamOpenAI(messages,{model:cur.model,temp:cur.temp},full=>{m.text=full;renderChat();});
+      m.streaming=false;
+    }else{
+      result=await callLLM(messages,{model:cur.model,temp:cur.temp,tools:exec});
+      hideTyping();
+      for(const tr of result.toolRuns||[])chatHist.push({role:'agent',tool:'Tool: '+tr.name,args:JSON.stringify(tr.args).slice(0,120)});
+      chatHist.push({role:'agent',text:result.text||'(leere Antwort)'});
+    }
+    const cost=trackCost(cur.name,cur.model,result.usage);
+    const last=chatHist[chatHist.length-1];
+    if(result.usage&&(result.usage.in||result.usage.out))last.meta=`📊 ${result.usage.in} in / ${result.usage.out} out · ${fmtCost(cost)}`;
+    renderChat();
+  }catch(e){
+    hideTyping();
+    chatHist.push({role:'agent',error:true,text:'❌ '+e.message+'\n\nTipp: Backend erreichbar? Provider-Key gesetzt? Modell-ID korrekt?'});
+    renderChat();}
+  sending=false;}
+
+function simulateReply(q){return'Simulations-Antwort auf: „'+q+'"\n\nModell wäre: '+cur.model+'\nWorkflow:\n'+(cur.steps||[]).map((s,i)=>(i+1)+'. '+s).join('\n');}
+
+function toast(m,err){const t=document.getElementById('toast');t.textContent=m;t.classList.toggle('err',!!err);t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+/* ================= INIT ================= */
+function demoInit(){if(!location.search.includes('demo=1'))return;
+  const t=TEMPLATES[0];loadIntoForm(t);cur.name='RechercheBot';fName.value='RechercheBot';
+  chatHist=[{role:'user',text:'Was gibt es Neues in der KI-Forschung?'},
+    {role:'agent',tool:'Tool: websuche',args:'{"query":"KI 2026"}'},
+    {role:'agent',text:'Kurzer Überblick: multimodale Agenten, Function Calling etabliert, effiziente Kleinmodelle.',meta:'📊 2450 in / 1890 out · 0,0103 $'}];
+  usage={'RechercheBot':{in:2450,out:1890,cost:0.0103}};renderCostPill();renderChat();}
+async function boot(){
+  renderUserArea();
+  document.getElementById('rateHint').textContent='OK (Frontend 120/min, Backend separat)';
+  if(auth.access){
+    try{
+      const me=await api('/api/auth/me');auth.user=me.user||auth.user;store.set('af_auth',auth);
+      await loadCloudAgents();
+    }catch{agents=store.get('af_agents',[]);}
+  }else agents=store.get('af_agents',[]);
+  renderAgentList();demoInit();loadIntoForm(cur);updateApiPill();renderCostPill();
+  // Periodisches Auto-Refresh, damit langer Chat die Access-Token nicht sprengt
+  setInterval(()=>{if(auth.refresh)tryRefresh();},9*60*1000);
+}
+boot();
+</script>
+</body>
+</html>
